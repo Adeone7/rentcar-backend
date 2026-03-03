@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sharebackend.mapper.ReviewMapper">
+    <!-- 리뷰 작성 -->
+    <insert id="insertOne" parameterType="Review">
+        insert into review (reservation_idx, content, star_rating)
+        values (#{reservationIdx}, #{content}, #{starRating})
+    </insert>
+
+    <!-- reservationIdx에 해당하는 모든 리뷰 조회  -->
+    <select id="selectByReservationIdxList" resultType="Review">
+        select * from review where reservation_idx=#{reservationIdx}
+    </select>
+
+
+    <!-- 리뷰 수정 -->
+    <update id="updateReview" parameterType="Review">
+        UPDATE review SET content = #{content}, star_rating = #{starRating}
+        WHERE idx = #{idx}
+    </update>
+
+    <!-- 리뷰 삭제 -->
+    <delete id="deleteReview">
+        DELETE FROM review WHERE idx = #{reviewIdx} AND reservation_idx IN (
+        SELECT idx FROM reservation WHERE account_id = #{accountId}
+        )
+    </delete>
+
+    <!-- 내가 작성한 리뷰 전체 조회 -->
+    <select id="selectMyReviews" parameterType="string" resultType="RentalOfferReviewListResponse">
+        SELECT rv.idx, rv.content, rv.star_rating,
+        a.nickname,
+        c.model_name, c.corporation, c.model_year,
+        rv.reservation_idx
+        FROM review rv
+        JOIN reservation r ON rv.reservation_idx = r.idx
+        JOIN rental_offer ro ON r.rental_offer_idx = ro.idx
+        JOIN car c ON ro.car_idx = c.idx
+        JOIN account a ON r.account_id = a.id
+        WHERE r.account_id = #{accountId}
+        ORDER BY rv.idx DESC
+    </select>
+
+    <!-- rentalOfferIdx에 해당하는 모든 리뷰 조회 -->
+    <select id="selectByRentalOfferIdx" resultType="RentalOfferReviewListResponse">
+        select account.nickname, review.*
+        from review
+        join reservation on review.reservation_idx = reservation.idx
+        join account on reservation.account_id = account.id
+        where reservation.rental_offer_idx = #{rentalOfferIdx}
+    </select>
+</mapper>

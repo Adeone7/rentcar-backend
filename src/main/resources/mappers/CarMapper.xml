@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sharebackend.mapper.CarMapper">
+    <insert id="insertCar" parameterType="com.example.sharebackend.domain.Car" useGeneratedKeys="true" keyProperty="idx">
+        insert into car (corporation, model_name, car_type, model_year, few_seats, gear_type)
+        values (#{corporation}, #{modelName}, #{carType}, #{modelYear}, #{fewSeats}, #{gearType})
+    </insert>
+    <!-- idx 해당 차 정보 조회 -->
+    <select id="findCarByIdx" resultType="Car">
+        select * from car where idx = #{idx}
+    </select>
+
+    <!-- 검색 조회에 사용 -->
+    <resultMap id="RentalOfferResultMap" type="RentalOffer">
+        <id property="idx" column="idx"/>
+        <result property="nickName" column="nickname"/>
+        <result property="carIdx" column="car_idx"/>
+        <result property="rentalPrice" column="rental_price"/>
+        <result property="description" column="description"/>
+        <result property="img" column="img"/>
+
+        <association property="car" javaType="Car">
+            <id property="idx" column="idx"/>
+            <result property="corporation" column="corporation"/>
+            <result property="modelName" column="model_name"/>
+            <result property="carType" column="car_type"/>
+            <result property="modelYear" column="model_year"/>
+            <result property="fewSeats" column="few_seats"/>
+            <result property="gearType" column="gear_type"/>
+        </association>
+
+
+    </resultMap>
+
+    <!-- query에 검색 및 총 갯수 -->
+    <select id="findAllCars" resultType="com.example.sharebackend.domain.Car" >
+        select * from car
+        where corporation like concat('%', #{query}, '%')
+        or model_name like concat('%', #{query}, '%')
+        or car_type like concat('%', #{query}, '%')
+        or model_year like concat('%', #{query}, '%')
+    </select>
+    <select id="countAllCars" resultType="int">
+        select count(*) from car
+        where corporation like concat('%', #{query}, '%')
+        or model_name like concat('%', #{query}, '%')
+        or car_type like concat('%', #{query}, '%')
+        or model_year like concat('%', #{query}, '%')
+
+    </select>
+
+    <!-- 차트용 데이터 -->
+    <select id="ChartList" resultType="CarChartResultResponse">
+        SELECT
+        MIN(car.idx) AS idx,
+        car.corporation,
+        car.model_name,
+        COUNT(reservation.idx) AS count
+        FROM car
+        JOIN rental_offer ON car.idx = rental_offer.car_idx
+        JOIN reservation ON rental_offer.idx = reservation.rental_offer_idx
+        WHERE reservation.reservation_status IN ('사용완료', '이용완료')
+        GROUP BY car.corporation, car.model_name
+    </select>
+
+    <!-- 차트용 월별 데이터 -->
+    <select id="ChartMonthList" resultType="CarChartResultResponse">
+        SELECT
+        MIN(car.idx) AS idx,
+        car.corporation,
+        car.model_name,
+        COUNT(reservation.idx) AS count
+        FROM car
+        JOIN rental_offer ON car.idx = rental_offer.car_idx
+        JOIN reservation ON rental_offer.idx = reservation.rental_offer_idx
+        WHERE reservation.reservation_status IN ('사용완료', '이용완료')
+        and month(reservation.start_date) = #{month}
+        GROUP BY car.corporation, car.model_name
+    </select>
+
+</mapper>

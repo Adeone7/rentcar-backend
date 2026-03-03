@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sharebackend.mapper.ReservationMapper">
+
+    <resultMap id="ReservationResultMap"
+               type="com.example.sharebackend.domain.Reservation">
+        <!-- Reservation -->
+        <id property="idx" column="idx"/>
+        <result property="accountId" column="account_id"/>
+        <result property="nickname" column="nickname"/>
+        <result property="rentalOfferIdx" column="rental_offer_idx"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="reservationStatus" column="reservation_status"/>
+        <result property="paymentAmount" column="payment_amount"/>
+        <result property="hasReview" column="has_review"/>
+
+        <!-- RentalOffer -->
+        <association property="rentalOffer"
+                     javaType="com.example.sharebackend.domain.RentalOffer">
+            <id property="idx" column="rental_offer_idx"/>
+            <result property="accountId" column="account_id"/>
+            <result property="carIdx" column="car_idx"/>
+            <result property="rentalPrice" column="rental_price"/>
+            <result property="description" column="description"/>
+            <result property="img" column="img"/>
+
+            <!-- Car -->
+            <association property="car"
+                         javaType="com.example.sharebackend.domain.Car">
+                <id property="idx" column="car_idx"/>
+                <result property="corporation" column="corporation"/>
+                <result property="modelName" column="model_name"/>
+                <result property="carType" column="car_type"/>
+                <result property="modelYear" column="model_year"/>
+                <result property="fewSeats" column="few_seats"/>
+                <result property="gearType" column="gear_type"/>
+            </association>
+
+        </association>
+    </resultMap>
+
+    <!-- 예약하기 -->
+    <insert id="insertOne" parameterType="Reservation">
+        insert into reservation (account_id, rental_offer_idx, start_date, end_date, reservation_status, payment_amount)
+        values (#{accountId}, #{rentalOfferIdx}, #{startDate}, #{endDate}, #{reservationStatus}, #{paymentAmount})
+    </insert>
+
+    <!-- 해당 아이디 예약 기록 조회 -->
+    <select id="selectListAll" parameterType="string" resultMap="ReservationResultMap">
+        select reservation.idx, account.nickname, reservation.rental_offer_idx,
+        reservation.start_date, reservation.end_date, reservation.reservation_status, reservation.payment_amount,
+        rental_offer.idx, account.nickname ,rental_offer.rental_price, rental_offer.description, car.*,(
+        select img
+        from car_img
+        where rental_offer_idx = rental_offer.idx
+        order by idx asc
+        limit 1
+        ) as img,
+        CASE WHEN EXISTS (
+        SELECT 1 FROM review WHERE review.reservation_idx = reservation.idx
+        ) THEN TRUE ELSE FALSE END AS has_review
+        from reservation
+        join rental_offer on rental_offer.idx = reservation.rental_offer_idx
+        join car on rental_offer.car_idx = car.idx
+        join account on reservation.account_id = account.id
+        where reservation.account_id = #{accountId}
+        order by reservation.idx desc
+    </select>
+
+    <!-- view에 사용 : 해당 아이디 예약 조회 -->
+    <select id="selectById" parameterType="int" resultType="Reservation">
+        select * from reservation
+        where reservation.idx = #{reservationIdx}
+        and not exists(
+        select 1
+        from rental_offer
+        where reservation.rental_offer_idx = rental_offer.idx
+        and reservation_status in ('예약중', '취소됨')
+        );
+    </select>
+
+    <!-- 반납절차 확인용 예약 조회 -->
+    <select id="selectReservationForReturn" parameterType="int" resultType="Reservation">
+        select * from reservation
+        where idx = #{reservationIdx}
+        and reservation.reservation_status = '예약중'
+    </select>
+
+    <!-- 해당 아이디 예약 총 개수 -->
+    <select id="selectAllCount" parameterType="string" resultType="int">
+        select count(*) from reservation where account_id=#{accountId}
+    </select>
+
+    <!-- 예약 중복 확인 -->
+    <select id="existsReservation" resultType="int">
+        select count(*)
+        from reservation
+        where rental_offer_idx = #{rentalOfferIdx}
+        and reservation_status in ('예약완료' , '예약중')
+        and start_date &lt; #{endDate}
+        and end_date &gt; #{startDate}
+    </select>
+
+    <select id="selectReservationsWithReview" resultType="ReservationWithReview">
+        SELECT r.*, ro.*, r.reservation_status,
+        CASE WHEN EXISTS (
+        SELECT 1
+        FROM review rv
+        WHERE rv.reservation_idx = r.idx
+        ) THEN TRUE ELSE FALSE END AS has_review
+        FROM reservation r
+        LEFT JOIN rental_offer ro ON r.rental_offer_idx = ro.idx
+        WHERE r.account_id = #{accountId}
+        ORDER BY r.start_date DESC
+    </select>
+
+    <!-- 예약 철회 -->
+    <delete id="reservationDelete" parameterType="Reservation" >
+        update reservation set reservation_status='취소됨' where idx=#{idx} and account_id=#{accountId}
+    </delete>
+
+    <!-- 예약 상태 업데이트 -->
+    <update id="reservationStatusUpdate" parameterType="map">
+        update reservation
+        join account on account.id = reservation.account_id
+        join rental_offer on rental_offer.idx = reservation.rental_offer_idx
+        set reservation_status = '사용완료'
+        where reservation_status = '예약중'
+        and reservation.idx = #{reservationIdx}
+        and account.id = #{accountId}
+    </update>
+
+
+</mapper>

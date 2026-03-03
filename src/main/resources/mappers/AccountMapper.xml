@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sharebackend.mapper.AccountMapper">
+    <!-- 회원 가입 -->
+    <insert id="insertOne" parameterType="Account" useGeneratedKeys="true" keyProperty="id">
+        insert into account (id, nickname, pw) values (#{id}, #{nickname}, #{pw})
+    </insert>
+
+    <!-- 해당 아이디 모든 정보 조회 -->
+    <select id="selectAll" parameterType="string" resultType="Account">
+        select * from account where id=#{id}
+    </select>
+
+    <select id="findById" parameterType="String" resultType="com.example.sharebackend.domain.Account">
+        select id, nickname from account where id = #{id}
+    </select>
+
+    <!-- 'id'가 존재하는지 카운트해서 boolean 값으로 반환 -->
+    <select id="existsById" parameterType="string" resultType="boolean">
+        select count(*) > 0 from account where id = #{id}
+    </select>
+
+    <!-- 이메일 인증 성공 시 active=true 업데이트 -->
+    <update id="activeUpdate" parameterType="string">
+        update account set active=true where id=#{_parameter}
+    </update>
+
+</mapper>

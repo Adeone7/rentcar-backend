@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sharebackend.mapper.VerifyMapper">
+    <!-- 인증 코드 저장 -->
+    <insert id="insertCode">
+        insert into email_code (account_id, code) values (#{param1}, #{param2})
+    </insert>
+
+    <!-- 해당 아이디 코드 조회 -->
+    <select id="selectByAccountId" parameterType="string" resultType="Verify">
+        select * from email_code where account_id= #{accountId}
+    </select>
+</mapper>
