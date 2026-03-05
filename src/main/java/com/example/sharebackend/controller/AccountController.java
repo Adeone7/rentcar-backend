@@ -82,6 +82,7 @@ public class AccountController {
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setTo(asr.getId());
+        mailMessage.setFrom("waryz6422@gmail.com");
         mailMessage.setSubject("이메일 인증 코드");
         mailMessage.setText("안녕하세요. "+ asr.getNickname() +"님!\n\n" +
                 "아래 인증 코드를 입력해 회원가입 절차를 완료해주세요.\n\n" +
