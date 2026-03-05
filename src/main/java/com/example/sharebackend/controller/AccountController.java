@@ -8,15 +8,12 @@ import com.example.sharebackend.response.AccountResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.security.SecureRandom;
 
 
@@ -27,9 +24,7 @@ import java.security.SecureRandom;
 public class AccountController {
     final AccountMapper accountMapper;
     final VerifyMapper verifyMapper;
-
-    @Value("${brevo.api.key}")
-    private String brevoApiKey;
+    final JavaMailSender mailSender;
 
     BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     SecureRandom random = new SecureRandom();
@@ -62,25 +57,17 @@ public class AccountController {
         System.out.println("코드 저장 :" + b);
 
         try {
-            String emailBody = String.format(
-                    "{\"sender\":{\"name\":\"TOCAR\",\"email\":\"waryz6422@gmail.com\"}," +
-                            "\"to\":[{\"email\":\"%s\",\"name\":\"%s\"}]," +
-                            "\"subject\":\"이메일 인증 코드\"," +
-                            "\"textContent\":\"안녕하세요. %s님!\\n\\n아래 인증 코드를 입력해 회원가입 절차를 완료해주세요.\\n\\n인증코드 : %s\\n\\n감사합니다.\"}",
-                    asr.getId(), asr.getNickname(), asr.getNickname(), code
-            );
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("waryz6422@gmail.com");
+            message.setTo(asr.getId());
+            message.setSubject("이메일 인증 코드");
+            message.setText(String.format(
+                    "안녕하세요. %s님!\n\n아래 인증 코드를 입력해 회원가입 절차를 완료해주세요.\n\n인증코드 : %s\n\n감사합니다.",
+                    asr.getNickname(), code
+            ));
 
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
-                    .header("accept", "application/json")
-                    .header("api-key", brevoApiKey)
-                    .header("content-type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(emailBody))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println("이메일 발송 결과 : " + response.statusCode() + " " + response.body());
+            mailSender.send(message);
+            System.out.println("이메일 발송 성공");
 
         } catch (Exception e) {
             System.out.println("이메일 발송 실패 : " + e.getMessage());
