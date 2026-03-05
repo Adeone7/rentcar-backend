@@ -66,7 +66,7 @@ public class AccountController {
                     "{\"sender\":{\"name\":\"TOCAR\",\"email\":\"waryz6422@gmail.com\"}," +
                             "\"to\":[{\"email\":\"%s\",\"name\":\"%s\"}]," +
                             "\"subject\":\"이메일 인증 코드\"," +
-                            "\"textContent\":\"안녕하세요. %s님!\\n\\n아래 인증 코드를 입력해 회원가입 절차를 완료해주세요.\\n\\n인증코드 : %s\\n\\n감사합니다.\"}",
+                            "\"textContent\":\"안녕하세요. %s님!\\n\\n아래 인증 코드를 입력해 회원가입 절차를 완료해주세요.\\n\\n인증코드 : %s\\n\\n 감사합니다.\"}",
                     asr.getId(), asr.getNickname(), asr.getNickname(), code
             );
 
