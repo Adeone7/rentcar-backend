@@ -8,6 +8,7 @@ import com.example.sharebackend.response.AccountResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,23 +28,19 @@ public class AccountController {
     final AccountMapper accountMapper;
     final VerifyMapper verifyMapper;
 
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
+
     BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     SecureRandom random = new SecureRandom();
-
-    private static final String BREVO_API_KEY = "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";
 
     @PostMapping("/signup")
     public AccountResponse AccountSignup(@Valid @RequestBody AccountRequest asr,
                                          BindingResult result, HttpSession session) {
 
         if (result.hasErrors()) {
-            System.out.println("id? " + result.hasFieldErrors("id"));
-            System.out.println("nickname? " + result.hasFieldErrors("nickname"));
-            System.out.println("pw? " + result.hasFieldErrors("pw"));
-
             result.getFieldErrors().forEach(error ->
                     System.out.println(error.getField() + " : " + error.getDefaultMessage()));
-
             return AccountResponse.builder().success(false).build();
         }
 
@@ -64,7 +61,6 @@ public class AccountController {
         int b = verifyMapper.insertCode(asr.getId(), code);
         System.out.println("코드 저장 :" + b);
 
-        // Brevo API로 이메일 발송
         try {
             String emailBody = String.format(
                     "{\"sender\":{\"name\":\"TOCAR\",\"email\":\"waryz6422@gmail.com\"}," +
@@ -78,7 +74,7 @@ public class AccountController {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
                     .header("accept", "application/json")
-                    .header("api-key", BREVO_API_KEY)
+                    .header("api-key", brevoApiKey)
                     .header("content-type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(emailBody))
                     .build();
